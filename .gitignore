@@ -1,0 +1,66 @@
+# Виртуальные окружения
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Питоновские кэши
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Установленные пакеты
+site-packages/
+
+# PyTorch, TensorFlow - они ОГРОМНЫЕ
+*.pth
+*.pth.*
+*.bin
+*.h5
+*.hdf5
+*.weights
+*.onnx
+*.pt
+*.pkl
+
+# DLL, исполняемые файлы
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Конфиги с паролями
+*.env
+.env
+secrets.py
+config.json
+credentials.json
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

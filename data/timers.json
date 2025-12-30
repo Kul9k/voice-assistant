@@ -1,0 +1,23 @@
+{
+  "timers": {
+    "1": {
+      "id": 1,
+      "name": "Таймер 1",
+      "end_time": 1767003245.471426,
+      "duration": 300,
+      "active": true,
+      "type": "timer"
+    }
+  },
+  "alarms": {
+    "0": {
+      "id": 0,
+      "name": "Будильник 0",
+      "alarm_time": 1767002940.0,
+      "active": true,
+      "type": "alarm"
+    }
+  },
+  "counter": 2,
+  "saved": "2025-12-29 13:09:05"
+}
