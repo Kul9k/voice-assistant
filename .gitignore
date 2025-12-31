@@ -37,9 +37,3 @@ site-packages/
 *.dll
 *.exe
 *.bin
-
-# Project specific (добавьте свои пути)
-models/
-data/
-downloads/
-temp/
