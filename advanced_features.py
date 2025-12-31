@@ -27,7 +27,7 @@ class AdvancedFeatures:
         print("✅ Расширенные функции инициализированы")
 
     def handle_music_command(self, command):
-        """Обработка музыкальных команд через Яндекс.Музыку"""
+        # Обработка музыкальных команд через Яндекс.Музыку
         print(f"🎵 Команда музыки: {command}")
 
         if not self.yandex_music:
@@ -39,7 +39,7 @@ class AdvancedFeatures:
         return self._handle_yandex_music(command)
 
     def _handle_yandex_music(self, command):
-        """Обработчик Яндекс.Музыки"""
+        # Обработчик Яндекс.Музыки
         cmd_lower = command.lower()
 
         # Быстрые команды
@@ -84,7 +84,7 @@ class AdvancedFeatures:
         return False
 
     def show_music_help(self):
-        """Показать справку по Яндекс.Музыке"""
+        # Показать справку по Яндекс.Музыке
         if self.yandex_music:
             self.yandex_music.show_help()
         else:
@@ -124,7 +124,7 @@ class AdvancedFeatures:
             return False
 
     def parse_time(self, command):
-        """Разобрать время из команды"""
+        # Разобрать время из команды
         # Ищем числа
         numbers = re.findall(r'\d+', command)
         if not numbers:
@@ -206,7 +206,7 @@ class AdvancedFeatures:
             return False
 
     def _timer_thread(self, timer_id):
-        """Поток для отслеживания таймера"""
+        # Поток для отслеживания таймера
         try:
             timer = self.active_timers.get(timer_id)
             if not timer or not timer['active']:
@@ -239,7 +239,7 @@ class AdvancedFeatures:
             print(f"❌ Ошибка в потоке таймера: {e}")
 
     def set_alarm(self, command):
-        """Установить будильник"""
+        # Установить будильник
         try:
             # Ищем время в формате ЧЧ:ММ
             time_match = re.search(r'(\d{1,2}):(\d{2})', command)
@@ -328,7 +328,7 @@ class AdvancedFeatures:
             print(f"❌ Ошибка в потоке будильника: {e}")
 
     def show_timers_status(self):
-        """Показать статус активных таймеров и будильников"""
+        # Показать статус активных таймеров и будильников
         print("\n" + "=" * 50)
         print("⏰ АКТИВНЫЕ ТАЙМЕРЫ И БУДИЛЬНИКИ")
         print("=" * 50)

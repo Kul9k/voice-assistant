@@ -1,20 +1,16 @@
-# yandex_music.py
 import webbrowser
 import pyautogui
 import time
 import urllib.parse
 import random
-import subprocess
 import os
-import sys
 import json
 from datetime import datetime
-import tempfile
 import socket
 
 
 class YandexMusicController:
-    """Контроллер Яндекс.Музыки для аккаунта пользователя"""
+    # Контроллер Яндекс Музыки для аккаунта пользователя
 
     def __init__(self, voice_engine=None):
         self.base_url = "https://music.yandex.ru"
@@ -30,7 +26,7 @@ class YandexMusicController:
         print("✅ Яндекс.Музыка инициализирована (режим пользователя)")
 
     def _load_user_sessions(self):
-        """Загрузить сохраненные сессии пользователей"""
+        # Загрузить сохраненные сессии пользователей
         try:
             os.makedirs("data", exist_ok=True)
             if os.path.exists(self.user_sessions_file):
@@ -42,7 +38,7 @@ class YandexMusicController:
             self.user_sessions = {}
 
     def _save_user_sessions(self):
-        """Сохранить сессии пользователей"""
+        # Сохранить сессии пользователей
         try:
             with open(self.user_sessions_file, 'w', encoding='utf-8') as f:
                 json.dump(self.user_sessions, f, ensure_ascii=False, indent=2)
@@ -50,7 +46,7 @@ class YandexMusicController:
             pass
 
     def _start_local_server(self):
-        """Запустить локальный сервер для привязки аккаунтов"""
+        # Запустить локальный сервер для привязки аккаунтов
         try:
             # Находим свободный порт
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,7 +60,7 @@ class YandexMusicController:
             self.connection_port = None
 
     def _play_sound(self, sound_type='success'):
-        """Воспроизвести звуковой сигнал"""
+        # Воспроизвести звуковой сигнал
         if self.voice_engine:
             if sound_type == 'success':
                 self.voice_engine.play_random_success()
@@ -72,7 +68,7 @@ class YandexMusicController:
                 self.voice_engine.play_more_details()
 
     def search(self, query, show_instructions=True):
-        """Поиск музыки (без автозапуска)"""
+        # Поиск музыки (без автозапуска)
         try:
             # Кодируем запрос для URL
             encoded_query = urllib.parse.quote(query)
@@ -95,7 +91,7 @@ class YandexMusicController:
             return False
 
     def _show_play_instructions(self):
-        """Показать инструкции для воспроизведения"""
+        # Показать инструкции для воспроизведения
         print("\n" + "=" * 50)
         print("🎵 ИНСТРУКЦИЯ:")
         print("=" * 50)
@@ -108,7 +104,7 @@ class YandexMusicController:
         print("=" * 50)
 
     def play_artist(self, artist_name):
-        """Открыть страницу артиста"""
+        # Открыть страницу артиста
         try:
             encoded_artist = urllib.parse.quote(artist_name)
             url = f"{self.base_url}/artist/{encoded_artist}"
@@ -126,7 +122,7 @@ class YandexMusicController:
             return False
 
     def open_radio(self, radio_type='стандартное'):
-        """Открыть радиостанцию"""
+        # Открыть радиостанцию
         radios = {
             'стандартное': '',
             'мне нравится': 'users/me/playlists/3',
@@ -160,7 +156,7 @@ class YandexMusicController:
         return True
 
     def control_playback(self, action):
-        """Управление воспроизведением (только если плеер открыт)"""
+        # Управление воспроизведением (только если плеер открыт
         hotkeys = {
             'play_pause': 'space',  # Play/Pause
             'play': 'space',  # Play
@@ -216,7 +212,7 @@ class YandexMusicController:
         return False
 
     def smart_search(self, command_text):
-        """Умный поиск по команде"""
+        # Умный поиск по команде
         cmd_lower = command_text.lower()
 
         # Определяем тип запроса
@@ -241,7 +237,7 @@ class YandexMusicController:
     # ФУНКЦИИ ДЛЯ УМНОЙ КОЛОНКИ (будущее)
 
     def setup_user_account(self, user_id=None):
-        """Настройка аккаунта пользователя"""
+        # Настройка аккаунта пользователя
         print("\n" + "=" * 60)
         print("🔐 ПРИВЯЗКА АККАУНТА ЯНДЕКС")
         print("=" * 60)
@@ -264,7 +260,7 @@ class YandexMusicController:
         return False
 
     def _generate_pairing_qr(self, user_id):
-        """Сгенерировать QR-код для привязки"""
+        # Сгенерировать QR-код для привязки
         try:
             import qrcode
             from PIL import Image
@@ -326,7 +322,7 @@ class YandexMusicController:
             return False
 
     def show_help(self):
-        """Показать справку"""
+        # Показать справку
         print("\n" + "=" * 60)
         print("🎵 ЯНДЕКС.МУЗЫКА - ИНСТРУКЦИЯ")
         print("=" * 60)
@@ -355,7 +351,7 @@ class YandexMusicController:
         self._play_sound('success')
 
     def get_status(self):
-        """Получить статус"""
+        # Получить статус
         now = datetime.now().strftime("%H:%M")
 
         status = {

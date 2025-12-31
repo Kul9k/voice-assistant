@@ -6,3 +6,5 @@ pycaw==20240222
 comtypes==1.3.0
 requests==2.31.0
 pyinstaller==6.8.0
+# Не обезательно
+numpy==1.24.3

@@ -1,4 +1,3 @@
-
 import speech_recognition as sr
 import time
 import webbrowser
@@ -9,98 +8,18 @@ import os
 import sys
 import re
 import pyautogui
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from data_manager import DataManager
 from voice_engine import VoiceEngine
 from volume_controller import VolumeController
 from advanced_features import AdvancedFeatures
 from yandex_music import YandexMusicController
+try:
+    from speech_enhancer import SpeechEnhancer
+    HAS_SPEECH_ENHANCER = True
+except ImportError as e:
+    print(f"⚠️ SpeechEnhancer не доступен: {e}")
+    HAS_SPEECH_ENHANCER = False
 
-class VolumeController:
-
-    def __init__(self):
-        self.volume_interface = None
-        self._init_volume_interface()
-
-    def _init_volume_interface(self):
-        try:
-            # Устройство воспроизведения по умолчанию
-            devices = AudioUtilities.GetSpeakers()
-
-            # Активируем менюшку управления громкостью
-            interface = devices.Activate(
-                IAudioEndpointVolume._iid_,
-                CLSCTX_ALL,
-                None
-            )
-
-            # Приводим к правильному типу
-            self.volume_interface = cast(interface, POINTER(IAudioEndpointVolume))
-            print("✅ Интерфейс громкости инициализирован")
-
-        except Exception as e:
-            print(f"⚠️ Не удалось инициализировать интерфейс громкости: {e}")
-            self.volume_interface = None
-
-    def get_current_volume(self):
-        if self.volume_interface:
-            try:
-                current = self.volume_interface.GetMasterVolumeLevelScalar()
-                return int(current * 100)
-            except:
-                pass
-        return 50  # Предполагаем 50%
-
-    def set_volume(self, percent):
-
-        # Ограничиваем диапазон
-        percent = max(0, min(100, percent))
-
-        if self.volume_interface:
-            try:
-                # Устанавливаем громкость
-                self.volume_interface.SetMasterVolumeLevelScalar(percent / 100.0, None)
-                print(f"✅ Громкость установлена на {percent}%")
-                return True
-            except Exception as e:
-                print(f"❌ Ошибка установки громкости: {e}")
-                return False
-        else:
-            # Резервный метод
-            return self._set_volume_fallback(percent)
-
-    def increase_volume(self, amount):
-        current = self.get_current_volume()
-        new_volume = min(100, current + amount)
-        return self.set_volume(new_volume)
-
-    def decrease_volume(self, amount):
-        current = self.get_current_volume()
-        new_volume = max(0, current - amount)
-        return self.set_volume(new_volume)
-
-    def _set_volume_fallback(self, percent):
-        print(f"⚠️ Использую резервный метод: {percent}%")
-
-        try:
-            # Сбрасываем к минимуму
-            for _ in range(50):
-                pyautogui.press('volumedown')
-
-            # Устанавливаем приблизительно
-            steps = percent // 2  # каждое нажатие ~2%
-            for _ in range(steps):
-                pyautogui.press('volumeup')
-                pyautogui.sleep(0.01)
-
-            print(f"✅ Приблизительно установлено: {percent}%")
-            return True
-
-        except Exception as e:
-            print(f"❌ Ошибка резервного метода: {e}")
-            return False
 
 class AIAssistant:
     def __init__(self):
@@ -112,6 +31,8 @@ class AIAssistant:
 
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
+        self.speech_enhancer = None
+        self._init_speech_enhancer()
 
         with self.microphone as source:
             self.recognizer.adjust_for_ambient_noise(source, duration=1)
@@ -132,8 +53,125 @@ class AIAssistant:
         print(f"Помощник {self.assistant_name} готов к работе!")
         self.voice_engine.play_welcome()
 
+    def _init_speech_enhancer(self):
+        # Инициализация улучшенного распознавателя речи
+        if HAS_SPEECH_ENHANCER:
+            try:
+                self.speech_enhancer = SpeechEnhancer(self.voice_engine)
+
+                # Калибруем микрофон при старте
+                print("🎤 Калибрую микрофон...")
+                self.speech_enhancer.adjust_for_ambient_noise_enhanced()
+
+                print("✅ Улучшенное распознавание речи инициализировано")
+            except Exception as e:
+                print(f"⚠️ Ошибка инициализации SpeechEnhancer: {e}")
+                self.speech_enhancer = None
+        else:
+            print("⚠️ SpeechEnhancer не доступен, использую стандартное распознавание")
+            self.speech_enhancer = None
+
+    def listen_for_wake_word(self):
+        # Слушаем wake-слово с улучшенным распознаванием
+        try:
+            # Используем улучшенный распознаватель если доступен
+            if self.speech_enhancer:
+                detected, command = self.speech_enhancer.listen_for_wake_word_enhanced(
+                    self.assistant_name.lower()
+                )
+
+                if detected:
+                    if command:
+                        # Есть команда вместе с wake-словом
+                        self.wake_up()
+                        self.process_command(command)
+                    else:
+                        # Только wake-слово
+                        self.wake_up(greeting=True)
+                    return True
+            else:
+                # Стандартный метод
+                print("🔊 Слушаю...", end="\r")
+                with self.microphone as source:
+                    audio = self.recognizer.listen(source, timeout=2, phrase_time_limit=3)
+                text = self.recognizer.recognize_google(audio, language="ru-RU").lower()
+                print(f"🎯 Распознано: {text}")
+
+                if self.assistant_name.lower() in text:
+                    if text.strip() == self.assistant_name.lower():
+                        self.wake_up(greeting=True)
+                    else:
+                        command = text.replace(self.assistant_name.lower(), "").strip()
+                        self.wake_up()
+                        self.process_command(command)
+                    return True
+
+        except sr.WaitTimeoutError:
+            pass
+        except sr.UnknownValueError:
+            pass
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+        return False
+
+    def listen_for_command(self, extended_timeout=False):
+        # Слушаем команду с улучшенным распознаванием
+        try:
+            # Используем улучшенный распознаватель если доступен
+            if self.speech_enhancer:
+                timeout = 10 if extended_timeout else 8
+                command = self.speech_enhancer.listen_for_command_enhanced(
+                    timeout=timeout,
+                    extended=extended_timeout
+                )
+
+                if command:
+                    return command
+                else:
+                    if self.waiting_for_details:
+                        print("⏰ Таймаут ожидания уточнения")
+                        self.waiting_for_details = False
+                        self.current_context = None
+                    else:
+                        print("⏰ Таймаут ожидания команды")
+                    self.is_awake = False
+                    return None
+            else:
+                # Стандартный метод
+                timeout = 10 if extended_timeout else 6
+                print("🎤 Слушаю команду...")
+
+                with self.microphone as source:
+                    audio = self.recognizer.listen(
+                        source,
+                        timeout=timeout,
+                        phrase_time_limit=7 if extended_timeout else 5
+                    )
+
+                command = self.recognizer.recognize_google(audio, language="ru-RU").lower()
+                print(f"📝 Команда: {command}")
+                return command
+
+        except sr.WaitTimeoutError:
+            if self.waiting_for_details:
+                print("⏰ Таймаут ожидания уточнения")
+                self.waiting_for_details = False
+                self.current_context = None
+            else:
+                print("⏰ Таймаут ожидания команды")
+            self.is_awake = False
+        except sr.UnknownValueError:
+            print("❓ Не удалось распознать команду")
+            if not self.waiting_for_details:
+                self.voice_engine.play_more_details()
+            self.is_awake = False
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+            self.is_awake = False
+        return None
+
     def _handle_yandex_music(self, command):
-        """Обработка голосовых команд Яндекс.Музыки"""
+        # Обработка голосовых команд Яндекс.Музыки
         if not self.yandex_music:
             print("❌ Яндекс.Музыка не инициализирована")
             self.voice_engine.play_more_details()
@@ -538,9 +576,62 @@ class AIAssistant:
                 word in command for word in ["включи", "музык", "песн", "трек", "артист", "групп", "радио"]):
             return self._handle_yandex_music(command)
 
+        if any(word in command for word in ["калибруй микрофон", "настрой микрофон",
+                                            "проверь микрофон", "микрофон"]):
+            return self._handle_microphone_commands(command)
+
         else:
             print(f"❓ Неизвестная команда: {command}")
             self.voice_engine.play_more_details()
+
+    def _handle_microphone_commands(self, command):
+        # Обработка команд управления микрофоном
+        if not self.speech_enhancer:
+            print("❌ Улучшенное распознавание речи не доступно")
+            self.voice_engine.play_more_details()
+            return False
+
+        cmd_lower = command.lower()
+
+        if "калибр" in cmd_lower or "настрой" in cmd_lower:
+            print("🎤 Запускаю калибровку микрофона...")
+            success = self.speech_enhancer.calibrate_microphone()
+            if success:
+                self.voice_engine.play_random_success()
+            else:
+                self.voice_engine.play_more_details()
+            return success
+
+        elif "информация" in cmd_lower or "статус" in cmd_lower:
+            info = self.speech_enhancer.get_microphone_info()
+            print(f"\n📊 ИНФОРМАЦИЯ О МИКРОФОНЕ:")
+            print(info)
+            self.voice_engine.play_random_success()
+            return True
+
+        elif "проверь" in cmd_lower or "тест" in cmd_lower:
+            print("🎤 Тестирование микрофона...")
+            print("Скажите что-нибудь в течение 5 секунд...")
+
+            try:
+                with self.microphone as source:
+                    audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=4)
+                    text = self.recognizer.recognize_google(audio, language="ru-RU")
+
+                    if text:
+                        print(f"✅ Микрофон работает! Распознано: {text}")
+                        self.voice_engine.play_random_success()
+                        return True
+                    else:
+                        print("❌ Микрофон не распознал речь")
+                        self.voice_engine.play_more_details()
+                        return False
+            except:
+                print("❌ Ошибка тестирования микрофона")
+                self.voice_engine.play_more_details()
+                return False
+
+        return False
 
     def ask_for_details(self, context, message):
         self.waiting_for_details = True
@@ -1028,10 +1119,29 @@ class AIAssistant:
         print("  музыка настройка - привязать аккаунт")
         print("  музыка помощь - справка")
         print("  музыка статус - статус")
+        print("  микрофон калибровка - калибровать микрофон")
+        print("  микрофон информация - информация о микрофоне")
+        print("  микрофон тест - тест микрофона")
         print("=" * 50)
 
         while True:
             try:
+                if user_input.startswith('микрофон '):
+                    mic_cmd = user_input.replace('микрофон ', '').strip()
+
+                    if not self.speech_enhancer:
+                        print("❌ SpeechEnhancer не доступен")
+                        continue
+
+                    if mic_cmd == 'калибровка':
+                        self.speech_enhancer.calibrate_microphone()
+
+                    elif mic_cmd == 'информация':
+                        info = self.speech_enhancer.get_microphone_info()
+                        print(f"\n{info}")
+
+                    elif mic_cmd == 'тест':
+                        print("🎤 Тестирую микрофон...")
                 user_input = input("\nКонсоль> ").strip().lower()
                 if user_input == 'выход':
                     print("🔙 Возврат в голосовой режим...")
